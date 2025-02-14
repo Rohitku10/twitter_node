@@ -30,27 +30,6 @@ initializeDbAndServer();
 
 
 
-// app.post('/register/',async (request,response)=>{
-//     const {username,password,name,gender} = request.body
-//     const searchQuery = `SELECT * FROM user WHERE username = ?`;
-//     const searchResult = await db.get(searchQuery,[username]);
-
-//     if(searchResult == undefined){
-//         try{
-//             const postQuery = `INSERT INTO user (username,password,name,gender) VALUES (?,?,?,?)`
-//             const postResult = await db.run(postQuery,[username,password,name,gender])
-//             response.send(postResult)
-//             console.log("User added")
-//         }catch(e){
-//             response.status(400).send(`Error:${e}`)
-//         }
-//     }
-//     else{
-//         response.status(400).send("USER ALREADY EXISTS")
-//     }
-
-// })
-
 app.post('/register/', async (request, response) => {
     const { username, password, name, gender } = request.body;
     
@@ -61,9 +40,15 @@ app.post('/register/', async (request, response) => {
         if (searchResult) {
             response.status(400).send("User already exists");
         } else {
-            const postQuery = `INSERT INTO user (username, password, name, gender) VALUES (?, ?, ?, ?)`;
-            await db.run(postQuery, [username, password, name, gender]);
-            response.send("User added");
+            if(password.length < 6){
+                response.status(400).send("Password is too short")
+            }
+            else{
+                const hashedPassword = await bcrypt.hash(password,10)
+                const postQuery = `INSERT INTO user (username, password, name, gender) VALUES (?, ?, ?, ?)`;
+                await db.run(postQuery, [username, hashedPassword, name, gender]);
+                response.send("User added");
+            }
         }
     } catch (e) {
         response.status(500).send(`Error: ${e.message}`);
