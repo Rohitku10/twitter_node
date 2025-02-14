@@ -47,10 +47,39 @@ app.post('/register/', async (request, response) => {
                 const hashedPassword = await bcrypt.hash(password,10)
                 const postQuery = `INSERT INTO user (username, password, name, gender) VALUES (?, ?, ?, ?)`;
                 await db.run(postQuery, [username, hashedPassword, name, gender]);
-                response.send("User added");
+                response.status(200).send("User added");
             }
         }
     } catch (e) {
         response.status(500).send(`Error: ${e.message}`);
     }
 });
+
+
+// API 2 __________
+
+app.post('/login/',async(request,response) => {
+    const {username,password} = request.body
+
+    const searchQuery = `SELECT * FROM user WHERE username = ?`;
+    const dbUser = await db.get(searchQuery,[username])
+
+    try{
+        if(dbUser){
+            const isPasswordMatched = await bcrypt.compare(password,dbUser.password)
+    
+            if(isPasswordMatched){
+                response.status(200).send("Login successfull")
+            }
+            else{
+                response.status(500).send("please enter a valid password")
+            }
+        }
+        else{
+            response.status(400).send("Invalid user")
+        }
+    }catch(e){
+        response.status(500).send(`Error : ${e}`)
+    }
+})
+
