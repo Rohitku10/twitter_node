@@ -4,6 +4,7 @@ const express = require('express')
 const bcrypt = require('bcrypt')
 const path = require('path');
 const { request } = require('http');
+const jwt = require('jsonwebtoken')
 
 const app = express();
 app.use(express.json())
@@ -58,6 +59,23 @@ app.post('/register/', async (request, response) => {
 
 // API 2 __________
 
+const authenticateToken = (request,response,next) =>{
+    let jwtToken
+    const authHeader = request.headers("Authentication")
+    if(authHeader != undefined){
+        jwtToken = authHeader.split()[1]
+    }
+    if(jwtToken == undefined){
+        response.status(400).send("Invalid jwtToken")
+    }
+    else{
+        jwt.verify(jwtToken,"Secret_Key",async(error,payload) =>{
+            next()
+        })
+    }
+
+}
+
 app.post('/login/',async(request,response) => {
     const {username,password} = request.body
 
@@ -69,7 +87,10 @@ app.post('/login/',async(request,response) => {
             const isPasswordMatched = await bcrypt.compare(password,dbUser.password)
     
             if(isPasswordMatched){
-                response.status(200).send("Login successfull")
+                // response.status(200).send("Login successfull")
+                const payload = {username:username}
+                const jwtToken = jwt.sign(payload,"Secret_Key")
+                response.send(jwtToken)
             }
             else{
                 response.status(500).send("please enter a valid password")
